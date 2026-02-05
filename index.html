@@ -31,7 +31,6 @@
             touch-action: manipulation;
         }
 
-        /* Fullscreen Layout */
         #app-wrapper {
             position: relative;
             width: 100%;
@@ -64,18 +63,36 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
         }
 
         .icon-btn {
             color: white;
             font-size: 20px;
             opacity: 0.9;
-            transition: opacity 0.2s;
             background: none;
             border: none;
             padding: 8px;
         }
+
+        /* Signal Strength Indicator */
+        .accuracy-pill {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .dot-excellent { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+        .dot-warning { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+        .dot-poor { background: #f87171; box-shadow: 0 0 8px #f87171; }
 
         /* Professional Geo Stamp */
         .geo-stamp-overlay {
@@ -88,31 +105,27 @@
         }
 
         .stamp-card {
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(12px);
-            border-radius: 12px;
-            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(15px);
+            border-radius: 14px;
+            padding: 12px;
             display: flex;
-            gap: 12px;
+            gap: 14px;
             width: fit-content;
-            max-width: 90%;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            max-width: 95%;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
         }
 
         .mini-map {
-            width: 70px;
-            height: 70px;
-            border-radius: 8px;
-            background: #222;
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            background: #111;
             overflow: hidden;
             flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .mini-map img {
@@ -128,9 +141,9 @@
             color: white;
         }
 
-        .location-main { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
-        .location-sub { font-size: 12px; opacity: 0.9; margin-bottom: 4px; }
-        .coords-text { font-family: monospace; font-size: 10px; opacity: 0.7; }
+        .location-main { font-weight: 800; font-size: 15px; line-height: 1.2; margin-bottom: 2px; }
+        .location-sub { font-size: 12px; opacity: 0.85; margin-bottom: 6px; }
+        .coords-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: 0.6; line-height: 1.4; }
 
         /* Bottom Controls */
         .bottom-bar {
@@ -138,22 +151,22 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 140px;
+            height: 150px;
             z-index: 10;
             display: flex;
             align-items: center;
             justify-content: space-around;
             padding-bottom: var(--safe-bottom);
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
         }
 
         .shutter-btn {
-            width: 76px;
-            height: 76px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             border: 4px solid white;
-            background: rgba(255,255,255,0.2);
-            padding: 4px;
+            background: rgba(255,255,255,0.1);
+            padding: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -164,22 +177,23 @@
             height: 100%;
             background: white;
             border-radius: 50%;
-            transition: transform 0.1s;
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .shutter-btn:active .shutter-inner { transform: scale(0.85); }
+        .shutter-btn:active .shutter-inner { transform: scale(0.88); }
 
         .nav-btn {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             color: white;
             background: none;
             border: none;
+            width: 70px;
         }
 
-        .nav-btn span { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .nav-btn span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.8; }
 
         #preview-layer {
             position: fixed;
@@ -190,7 +204,6 @@
             flex-direction: column;
         }
 
-        .brand-color { color: var(--brand-color); }
         .brand-bg { background-color: var(--brand-color); }
     </style>
 </head>
@@ -200,10 +213,11 @@
         <!-- Top Toolbar -->
         <div class="top-bar">
             <button class="icon-btn"><i class="fa-regular fa-image"></i></button>
-            <button class="icon-btn" onclick="toggleFlash()"><i class="fa-solid fa-bolt-lightning"></i></button>
+            <div id="accuracy-indicator" class="accuracy-pill">
+                <span id="accuracy-dot" class="dot dot-poor"></span>
+                <span id="accuracy-label">LOCKING GPS...</span>
+            </div>
             <button class="icon-btn" onclick="flipCamera()"><i class="fa-solid fa-camera-rotate"></i></button>
-            <button class="icon-btn"><i class="fa-solid fa-sliders"></i></button>
-            <button class="icon-btn"><i class="fa-solid fa-gear"></i></button>
         </div>
 
         <!-- Main Camera View -->
@@ -215,12 +229,12 @@
         <div class="geo-stamp-overlay">
             <div id="stamp-card" class="stamp-card">
                 <div class="mini-map">
-                    <img id="stamp-map" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" alt="Map">
+                    <img id="stamp-map" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Map">
                 </div>
                 <div class="stamp-details">
-                    <div id="stamp-country" class="location-main">Detecting...</div>
-                    <div id="stamp-province" class="location-sub">Acquiring Location</div>
-                    <div id="stamp-latlong" class="coords-text">Lat: 0.0000, Long: 0.0000</div>
+                    <div id="stamp-country" class="location-main">Detecting Location...</div>
+                    <div id="stamp-province" class="location-sub">Acquiring signal</div>
+                    <div id="stamp-latlong" class="coords-text">Searching...</div>
                     <div id="stamp-datetime" class="coords-text">--/--/-- --:-- --</div>
                 </div>
             </div>
@@ -238,10 +252,10 @@
             </button>
 
             <button class="nav-btn">
-                <div class="w-8 h-8 rounded-full overflow-hidden border border-white/40 mb-1">
+                <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 mb-1">
                     <img id="recent-thumb" src="https://via.placeholder.com/100" class="w-full h-full object-cover">
                 </div>
-                <span>My Photos</span>
+                <span>Gallery</span>
             </button>
         </div>
 
@@ -249,17 +263,20 @@
         <div id="shutter-flash" class="fixed inset-0 bg-white z-[60] opacity-0 pointer-events-none transition-opacity duration-150"></div>
     </div>
 
-    <!-- Preview/Result Modal -->
+    <!-- Result Modal -->
     <div id="preview-layer">
         <div class="flex-1 relative overflow-hidden flex items-center justify-center">
             <canvas id="result-canvas" class="max-w-full max-h-full object-contain"></canvas>
         </div>
         <div class="h-32 bg-white flex items-center justify-between px-10">
-            <button onclick="closePreview()" class="text-gray-500 font-bold uppercase text-xs flex flex-col items-center gap-1">
-                <i class="fa-solid fa-xmark text-xl"></i> Cancel
+            <button onclick="closePreview()" class="text-gray-500 font-bold uppercase text-[11px] flex flex-col items-center gap-2">
+                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </div>
+                Retake
             </button>
-            <button onclick="saveFinal()" class="brand-bg text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg">
-                <i class="fa-solid fa-download"></i> SAVE PHOTO
+            <button onclick="saveFinal()" class="brand-bg text-white px-10 py-4 rounded-full font-bold flex items-center gap-3 shadow-xl active:scale-95 transition-transform">
+                <i class="fa-solid fa-download"></i> SAVE TO DEVICE
             </button>
         </div>
     </div>
@@ -271,6 +288,7 @@
         let currentCoords = null;
         let addressInfo = { country: "Searching...", province: "Locating..." };
         let facingMode = 'environment';
+        let lastGeocodeTime = 0;
 
         // --- Core Init ---
         async function initCamera() {
@@ -279,7 +297,7 @@
                     video.srcObject.getTracks().forEach(t => t.stop());
                 }
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    video: { facingMode, width: { ideal: 3840 }, height: { ideal: 2160 } },
                     audio: false
                 });
                 video.srcObject = stream;
@@ -289,23 +307,53 @@
         }
 
         function startLocation() {
+            // High precision monitoring
             navigator.geolocation.watchPosition(async (pos) => {
-                const needsUpdate = !currentCoords || 
-                    Math.abs(currentCoords.latitude - pos.coords.latitude) > 0.001;
+                const now = Date.now();
+                const accuracy = pos.coords.accuracy;
                 
+                // Update Accuracy UI
+                const dot = document.getElementById('accuracy-dot');
+                const label = document.getElementById('accuracy-label');
+                if (accuracy < 20) {
+                    dot.className = 'dot dot-excellent';
+                    label.textContent = `PRECISION: ${accuracy.toFixed(0)}m`;
+                } else if (accuracy < 100) {
+                    dot.className = 'dot dot-warning';
+                    label.textContent = `SIGNAL: ${accuracy.toFixed(0)}m`;
+                } else {
+                    dot.className = 'dot dot-poor';
+                    label.textContent = `LOW SIGNAL`;
+                }
+
+                const significantMove = !currentCoords || 
+                    Math.abs(currentCoords.latitude - pos.coords.latitude) > 0.0005 ||
+                    Math.abs(currentCoords.longitude - pos.coords.longitude) > 0.0005;
+                
+                const timeThrottle = now - lastGeocodeTime > 15000; // Refetch address every 15s if moved
+
                 currentCoords = pos.coords;
                 updateUI();
                 
-                if (needsUpdate) {
+                if (significantMove && timeThrottle && accuracy < 100) {
+                    lastGeocodeTime = now;
                     reverseGeocode(pos.coords.latitude, pos.coords.longitude);
                     updateMap(pos.coords.latitude, pos.coords.longitude);
                 }
-            }, null, { enableHighAccuracy: true });
+            }, (err) => {
+                document.getElementById('accuracy-label').textContent = "GPS BLOCKED";
+            }, { 
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 5000
+            });
         }
 
-        // --- Gemini Geocoding ---
+        // --- High Precision Geocoding ---
         async function reverseGeocode(lat, lng) {
-            const prompt = `Identify the Country and the specific State/Province for these coordinates: ${lat}, ${lng}. Return strictly JSON like: {"country": "...", "province": "..."}`;
+            const prompt = `Act as a high-precision GPS geocoder. For coordinates ${lat}, ${lng}, identify the Country and the most specific Province/State/District possible. 
+            Format exactly as JSON: {"country": "Country Name", "province": "State/Province/District Name"}. 
+            Check local borders carefully for high accuracy.`;
             
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -318,100 +366,93 @@
                 });
                 const data = await response.json();
                 const result = JSON.parse(data.candidates[0].content.parts[0].text);
-                addressInfo = result;
-                updateUI();
+                if(result.country) {
+                    addressInfo = result;
+                    updateUI();
+                }
             } catch (e) {
-                addressInfo = { country: "Unknown Location", province: "GPS Active" };
+                console.error("Geocoding error:", e);
             }
         }
 
         function updateMap(lat, lng) {
-            // Using OpenStreetMap static tile (Free/Public)
-            const zoom = 15;
+            const zoom = 16;
             const mapImg = document.getElementById('stamp-map');
-            mapImg.src = `https://static-maps.yandex.ru/1.x/?lang=en_US&ll=${lng},${lat}&z=${zoom}&l=map&size=200,200`;
+            // Using Yandex for better international map tiles without keys
+            mapImg.src = `https://static-maps.yandex.ru/1.x/?lang=en_US&ll=${lng},${lat}&z=${zoom}&l=map&size=250,250`;
         }
 
         function updateUI() {
             if (!currentCoords) return;
             document.getElementById('stamp-country').textContent = addressInfo.country;
             document.getElementById('stamp-province').textContent = addressInfo.province;
-            document.getElementById('stamp-latlong').textContent = `Lat: ${currentCoords.latitude.toFixed(6)}, Long: ${currentCoords.longitude.toFixed(6)}`;
+            document.getElementById('stamp-latlong').textContent = `LAT: ${currentCoords.latitude.toFixed(6)}\nLONG: ${currentCoords.longitude.toFixed(6)}`;
             
             const now = new Date();
-            const dateStr = now.toLocaleDateString('en-GB');
+            const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
             const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
             document.getElementById('stamp-datetime').textContent = `${dateStr} ${timeStr}`;
         }
 
-        // --- Camera Actions ---
+        // --- Camera Logic ---
         function flipCamera() {
             facingMode = facingMode === 'user' ? 'environment' : 'user';
             initCamera();
         }
 
-        function toggleFlash() {
-            const track = video.srcObject.getVideoTracks()[0];
-            const caps = track.getCapabilities();
-            if (caps.torch) {
-                const current = track.getSettings().torch;
-                track.applyConstraints({ advanced: [{ torch: !current }] });
-            }
-        }
-
         async function capture() {
-            // UI Flash effect
+            if (!currentCoords) return;
+
             const flash = document.getElementById('shutter-flash');
             flash.style.opacity = '1';
-            setTimeout(() => flash.style.opacity = '0', 150);
+            setTimeout(() => flash.style.opacity = '0', 100);
 
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
-            
-            // 1. Draw Main Image
             ctx.drawImage(video, 0, 0);
 
-            // 2. Draw Stamp Card (Composite)
-            const stampW = canvas.width * 0.45;
-            const stampH = canvas.height * 0.12;
-            const margin = 50;
-            const radius = 24;
+            // COMPOSITE STAMP
+            const scale = canvas.width / 1080; // Scale graphics relative to resolution
+            const stampW = 520 * scale;
+            const stampH = 140 * scale;
+            const margin = 40 * scale;
+            const radius = 20 * scale;
 
-            // Draw Card Background
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            // Blur-simulated Background
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
             ctx.beginPath();
-            ctx.roundRect(margin, canvas.height - stampH - margin - 150, stampW, stampH, radius);
+            ctx.roundRect(margin, canvas.height - stampH - margin - (120*scale), stampW, stampH, radius);
             ctx.fill();
 
-            // Draw Map Image on Canvas
+            // Map
             const mapImg = document.getElementById('stamp-map');
+            const mapSize = stampH - (30 * scale);
             ctx.save();
             ctx.beginPath();
-            ctx.roundRect(margin + 20, canvas.height - stampH - margin - 130, stampH - 40, stampH - 40, 10);
+            ctx.roundRect(margin + (15*scale), canvas.height - stampH - margin - (120*scale) + (15*scale), mapSize, mapSize, 10*scale);
             ctx.clip();
-            ctx.drawImage(mapImg, margin + 20, canvas.height - stampH - margin - 130, stampH - 40, stampH - 40);
+            ctx.drawImage(mapImg, margin + (15*scale), canvas.height - stampH - margin - (120*scale) + (15*scale), mapSize, mapSize);
             ctx.restore();
 
-            // Draw Text
+            // Text
             ctx.fillStyle = 'white';
-            const textX = margin + stampH;
-            const baseLine = canvas.height - stampH - margin - 100;
+            const textX = margin + mapSize + (35 * scale);
+            const baseLine = canvas.height - stampH - margin - (120*scale) + (45 * scale);
             
-            ctx.font = 'bold 36px sans-serif';
-            ctx.fillText(addressInfo.country, textX, baseLine);
+            ctx.font = `bold ${32*scale}px sans-serif`;
+            ctx.fillText(addressInfo.country.toUpperCase(), textX, baseLine);
             
-            ctx.font = '30px sans-serif';
-            ctx.fillText(addressInfo.province, textX, baseLine + 40);
+            ctx.font = `${26*scale}px sans-serif`;
+            ctx.fillText(addressInfo.province, textX, baseLine + (32*scale));
             
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.font = '22px monospace';
-            const latLong = `Lat: ${currentCoords.latitude.toFixed(6)}, Long: ${currentCoords.longitude.toFixed(6)}`;
-            ctx.fillText(latLong, textX, baseLine + 80);
-            ctx.fillText(document.getElementById('stamp-datetime').textContent, textX, baseLine + 110);
+            ctx.font = `${18*scale}px monospace`;
+            ctx.fillText(`LAT: ${currentCoords.latitude.toFixed(6)}`, textX, baseLine + (65*scale));
+            ctx.fillText(`LONG: ${currentCoords.longitude.toFixed(6)}`, textX, baseLine + (88*scale));
+            ctx.fillText(document.getElementById('stamp-datetime').textContent, textX, baseLine + (112*scale));
 
-            // Update thumb and show preview
-            document.getElementById('recent-thumb').src = canvas.toDataURL();
+            document.getElementById('recent-thumb').src = canvas.toDataURL('image/jpeg', 0.5);
             document.getElementById('preview-layer').style.display = 'flex';
         }
 
@@ -421,7 +462,7 @@
 
         function saveFinal() {
             const link = document.createElement('a');
-            link.download = `GeoSnap_${Date.now()}.jpg`;
+            link.download = `GeoSnap_Pro_${Date.now()}.jpg`;
             link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
             closePreview();
