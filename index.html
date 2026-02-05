@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GeoSnap - Precision Capture</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>GeoSnap Pro - Precision Camera</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -11,406 +11,426 @@
     <style>
         :root {
             --brand-color: #ee6912;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Prevent all native-like web behaviors */
         body {
-            background-color: #ffffff;
-            color: #000000;
+            background-color: #000;
+            color: #ffffff;
             margin: 0;
             padding: 0;
             overflow: hidden;
             width: 100vw;
             height: 100dvh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            /* No hold select */
+            font-family: 'Inter', -apple-system, sans-serif;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
-            /* No pull to refresh */
             overscroll-behavior-y: contain;
-            /* No zoom on input */
             touch-action: manipulation;
         }
 
-        .brand-text { color: var(--brand-color); }
-        .brand-bg { background-color: var(--brand-color); }
-        
-        /* Camera UI Layout */
-        #app-container {
+        /* Fullscreen Layout */
+        #app-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            height: 100dvh;
-            width: 100vw;
-            position: relative;
         }
 
-        #camera-viewport {
-            flex: 1;
+        #camera-container {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
             background: #000;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        video, canvas {
+        video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .bottom-controls {
-            height: 140px;
-            background: #ffffff;
+        /* Top Overlay UI */
+        .top-bar {
+            position: absolute;
+            top: var(--safe-top);
+            left: 0;
+            right: 0;
+            z-index: 10;
+            padding: 15px 20px;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            padding-bottom: env(safe-area-inset-bottom);
-            border-top: 1px solid #eee;
-            z-index: 50;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
         }
 
-        .capture-btn {
+        .icon-btn {
+            color: white;
+            font-size: 20px;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+            background: none;
+            border: none;
+            padding: 8px;
+        }
+
+        /* Professional Geo Stamp */
+        .geo-stamp-overlay {
+            position: absolute;
+            bottom: 160px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .stamp-card {
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            gap: 12px;
+            width: fit-content;
+            max-width: 90%;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .mini-map {
             width: 70px;
             height: 70px;
-            border-radius: 50%;
-            border: 4px solid var(--brand-color);
-            padding: 4px;
-            transition: transform 0.1s active;
+            border-radius: 8px;
+            background: #222;
+            overflow: hidden;
+            flex-shrink: 0;
         }
-        
-        .capture-btn-inner {
+
+        .mini-map img {
             width: 100%;
             height: 100%;
-            background: var(--brand-color);
-            border-radius: 50%;
+            object-fit: cover;
         }
 
-        .capture-btn:active {
-            transform: scale(0.92);
-        }
-
-        /* Overlay Styles */
-        .geo-badge {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            backdrop-filter: blur(4px);
-            z-index: 40;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-        }
-
-        .dot-green { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
-        .dot-red { background: #f87171; }
-
-        #photo-preview {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            z-index: 60;
-            display: none;
+        .stamp-details {
+            display: flex;
             flex-direction: column;
+            justify-content: center;
+            color: white;
         }
 
-        .btn-action {
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 15px;
+        .location-main { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+        .location-sub { font-size: 12px; opacity: 0.9; margin-bottom: 4px; }
+        .coords-text { font-family: monospace; font-size: 10px; opacity: 0.7; }
+
+        /* Bottom Controls */
+        .bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 140px;
+            z-index: 10;
             display: flex;
             align-items: center;
-            gap: 8px;
-            background-color: var(--brand-color);
+            justify-content: space-around;
+            padding-bottom: var(--safe-bottom);
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+
+        .shutter-btn {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background: rgba(255,255,255,0.2);
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .shutter-inner {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.1s;
+        }
+
+        .shutter-btn:active .shutter-inner { transform: scale(0.85); }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
             color: white;
+            background: none;
             border: none;
         }
 
-        /* Custom Modal */
-        .modal {
+        .nav-btn span { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        #preview-layer {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            background: #000;
             z-index: 100;
+            display: none;
+            flex-direction: column;
         }
 
-        .modal-content {
-            background: white;
-            padding: 24px;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 320px;
-            text-align: center;
-        }
+        .brand-color { color: var(--brand-color); }
+        .brand-bg { background-color: var(--brand-color); }
     </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <!-- Header -->
-        <header class="p-4 flex justify-between items-center bg-white">
-            <h1 class="text-xl font-bold brand-text"><i class="fa-solid fa-location-dot mr-2"></i>GEOSNAP</h1>
-            <div id="gps-status" class="text-xs font-medium bg-gray-100 px-3 py-1 rounded-full flex items-center">
-                <span class="status-dot dot-red"></span> GPS INITIALIZING
-            </div>
-        </header>
+    <div id="app-wrapper">
+        <!-- Top Toolbar -->
+        <div class="top-bar">
+            <button class="icon-btn"><i class="fa-regular fa-image"></i></button>
+            <button class="icon-btn" onclick="toggleFlash()"><i class="fa-solid fa-bolt-lightning"></i></button>
+            <button class="icon-btn" onclick="flipCamera()"><i class="fa-solid fa-camera-rotate"></i></button>
+            <button class="icon-btn"><i class="fa-solid fa-sliders"></i></button>
+            <button class="icon-btn"><i class="fa-solid fa-gear"></i></button>
+        </div>
 
-        <!-- Camera / Viewport -->
-        <main id="camera-viewport">
-            <div id="geo-info-badge" class="geo-badge hidden">
-                <div class="flex items-center mb-1">
-                    <i class="fa-solid fa-crosshairs mr-2"></i> 
-                    <span id="lat-display">0.0000</span>, <span id="lng-display">0.0000</span>
+        <!-- Main Camera View -->
+        <div id="camera-container">
+            <video id="video-feed" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Live Stamp -->
+        <div class="geo-stamp-overlay">
+            <div id="stamp-card" class="stamp-card">
+                <div class="mini-map">
+                    <img id="stamp-map" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" alt="Map">
                 </div>
-                <div class="text-[10px] opacity-80" id="acc-display">Accuracy: -- m</div>
-            </div>
-            
-            <video id="video-stream" autoplay playsinline muted></video>
-            <canvas id="capture-canvas" class="hidden"></canvas>
-
-            <!-- Splash screen / Init State -->
-            <div id="init-overlay" class="absolute inset-0 bg-white flex flex-col items-center justify-center p-8 text-center z-50">
-                <div class="brand-bg w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl mb-6 shadow-lg">
-                    <i class="fa-solid fa-camera"></i>
+                <div class="stamp-details">
+                    <div id="stamp-country" class="location-main">Detecting...</div>
+                    <div id="stamp-province" class="location-sub">Acquiring Location</div>
+                    <div id="stamp-latlong" class="coords-text">Lat: 0.0000, Long: 0.0000</div>
+                    <div id="stamp-datetime" class="coords-text">--/--/-- --:-- --</div>
                 </div>
-                <h2 class="text-2xl font-bold mb-2">Ready to Snap?</h2>
-                <p class="text-gray-500 mb-8">We'll need camera and location access to perfectly tag your photos.</p>
-                <button onclick="startApp()" class="btn-action w-full justify-center">
-                    ENABLE CAMERA & GPS
-                </button>
-            </div>
-        </main>
-
-        <!-- Bottom Controls -->
-        <footer class="bottom-controls">
-            <div id="capture-ui" class="flex flex-col items-center">
-                <p class="text-[10px] uppercase tracking-widest text-gray-400 mb-3 font-bold">Tap to capture</p>
-                <button onclick="takePhoto()" id="capture-trigger" class="capture-btn">
-                    <div class="capture-btn-inner"></div>
-                </button>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Fullscreen Preview Layer -->
-    <div id="photo-preview">
-        <div class="flex-1 bg-black relative flex items-center justify-center">
-            <img id="preview-img" class="max-w-full max-h-full object-contain">
-            <div id="preview-geo-stamp" class="absolute bottom-6 left-6 text-white text-xs bg-black/50 p-3 rounded-lg backdrop-blur-sm border border-white/20">
-                <div class="font-bold brand-text mb-1 uppercase tracking-tighter">Verified Geo-Tag</div>
-                <div id="stamp-coords">0.0000, 0.0000</div>
-                <div id="stamp-time" class="opacity-70">2024-05-20 12:00:00</div>
             </div>
         </div>
-        <div class="h-32 bg-white flex items-center justify-around px-6">
-            <button onclick="retake()" class="flex flex-col items-center gap-1 text-gray-500">
-                <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <i class="fa-solid fa-rotate-left"></i>
-                </div>
-                <span class="text-[10px] font-bold uppercase">Recapture</span>
+
+        <!-- Bottom Shutter & Navigation -->
+        <div class="bottom-bar">
+            <button class="nav-btn">
+                <i class="fa-solid fa-stamp text-xl mb-1"></i>
+                <span>Stamp</span>
             </button>
             
-            <button onclick="savePhoto()" class="btn-action">
-                <i class="fa-solid fa-download"></i> SAVE TO GALLERY
+            <button class="shutter-btn" onclick="capture()">
+                <div class="shutter-inner"></div>
+            </button>
+
+            <button class="nav-btn">
+                <div class="w-8 h-8 rounded-full overflow-hidden border border-white/40 mb-1">
+                    <img id="recent-thumb" src="https://via.placeholder.com/100" class="w-full h-full object-cover">
+                </div>
+                <span>My Photos</span>
             </button>
         </div>
+
+        <!-- Fullscreen Capture Splash -->
+        <div id="shutter-flash" class="fixed inset-0 bg-white z-[60] opacity-0 pointer-events-none transition-opacity duration-150"></div>
     </div>
 
-    <!-- Custom Dialog -->
-    <div id="msg-modal" class="modal">
-        <div class="modal-content">
-            <i id="modal-icon" class="fa-solid fa-circle-info text-4xl brand-text mb-4"></i>
-            <h3 id="modal-title" class="text-lg font-bold mb-2">Message</h3>
-            <p id="modal-text" class="text-gray-600 mb-6 text-sm">Description goes here.</p>
-            <button onclick="closeModal()" class="w-full py-3 brand-bg text-white font-bold rounded-xl">GOT IT</button>
+    <!-- Preview/Result Modal -->
+    <div id="preview-layer">
+        <div class="flex-1 relative overflow-hidden flex items-center justify-center">
+            <canvas id="result-canvas" class="max-w-full max-h-full object-contain"></canvas>
+        </div>
+        <div class="h-32 bg-white flex items-center justify-between px-10">
+            <button onclick="closePreview()" class="text-gray-500 font-bold uppercase text-xs flex flex-col items-center gap-1">
+                <i class="fa-solid fa-xmark text-xl"></i> Cancel
+            </button>
+            <button onclick="saveFinal()" class="brand-bg text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg">
+                <i class="fa-solid fa-download"></i> SAVE PHOTO
+            </button>
         </div>
     </div>
 
     <script>
-        const video = document.getElementById('video-stream');
-        const canvas = document.getElementById('capture-canvas');
-        const previewLayer = document.getElementById('photo-preview');
-        const previewImg = document.getElementById('preview-img');
-        const initOverlay = document.getElementById('init-overlay');
-        const gpsStatus = document.getElementById('gps-status');
-        const geoBadge = document.getElementById('geo-info-badge');
-
+        const video = document.getElementById('video-feed');
+        const canvas = document.getElementById('result-canvas');
+        const apiKey = ""; // Provided by environment
         let currentCoords = null;
-        let stream = null;
-        let watchId = null;
+        let addressInfo = { country: "Searching...", province: "Locating..." };
+        let facingMode = 'environment';
 
-        // Initialize Application
-        async function startApp() {
+        // --- Core Init ---
+        async function initCamera() {
             try {
-                // 1. Request Camera
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    audio: false 
+                if(video.srcObject) {
+                    video.srcObject.getTracks().forEach(t => t.stop());
+                }
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
                 });
                 video.srcObject = stream;
-                
-                // 2. Request High Accuracy Geolocation
-                startGpsTracking();
-
-                // 3. Update UI
-                initOverlay.style.display = 'none';
-                geoBadge.classList.remove('hidden');
             } catch (err) {
-                showModal('Access Denied', 'We need camera permissions to function. Please check your browser settings.', 'fa-lock');
+                console.error("Camera failed:", err);
             }
         }
 
-        function startGpsTracking() {
-            if (!navigator.geolocation) {
-                showModal('GPS Error', 'Geolocation is not supported by your device.');
-                return;
-            }
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            };
-
-            watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    currentCoords = pos.coords;
-                    updateGpsUI(true);
-                },
-                (err) => {
-                    console.error(err);
-                    updateGpsUI(false);
-                },
-                options
-            );
+        function startLocation() {
+            navigator.geolocation.watchPosition(async (pos) => {
+                const needsUpdate = !currentCoords || 
+                    Math.abs(currentCoords.latitude - pos.coords.latitude) > 0.001;
+                
+                currentCoords = pos.coords;
+                updateUI();
+                
+                if (needsUpdate) {
+                    reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+                    updateMap(pos.coords.latitude, pos.coords.longitude);
+                }
+            }, null, { enableHighAccuracy: true });
         }
 
-        function updateGpsUI(active) {
-            const dot = gpsStatus.querySelector('.status-dot');
-            const text = gpsStatus.lastChild;
+        // --- Gemini Geocoding ---
+        async function reverseGeocode(lat, lng) {
+            const prompt = `Identify the Country and the specific State/Province for these coordinates: ${lat}, ${lng}. Return strictly JSON like: {"country": "...", "province": "..."}`;
             
-            if (active && currentCoords) {
-                dot.className = 'status-dot dot-green';
-                gpsStatus.innerHTML = `<span class="status-dot dot-green"></span> GPS ACTIVE (${currentCoords.accuracy.toFixed(0)}m)`;
-                document.getElementById('lat-display').textContent = currentCoords.latitude.toFixed(6);
-                document.getElementById('lng-display').textContent = currentCoords.longitude.toFixed(6);
-                document.getElementById('acc-display').textContent = `Accuracy: ${currentCoords.accuracy.toFixed(1)} m`;
-            } else {
-                dot.className = 'status-dot dot-red';
-                gpsStatus.innerHTML = `<span class="status-dot dot-red"></span> GPS SIGNAL WEAK`;
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                const data = await response.json();
+                const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                addressInfo = result;
+                updateUI();
+            } catch (e) {
+                addressInfo = { country: "Unknown Location", province: "GPS Active" };
             }
         }
 
-        function takePhoto() {
-            if (!currentCoords) {
-                showModal('Waiting for GPS', 'Please wait until we have a precise location lock before capturing.', 'fa-location-crosshairs');
-                return;
+        function updateMap(lat, lng) {
+            // Using OpenStreetMap static tile (Free/Public)
+            const zoom = 15;
+            const mapImg = document.getElementById('stamp-map');
+            mapImg.src = `https://static-maps.yandex.ru/1.x/?lang=en_US&ll=${lng},${lat}&z=${zoom}&l=map&size=200,200`;
+        }
+
+        function updateUI() {
+            if (!currentCoords) return;
+            document.getElementById('stamp-country').textContent = addressInfo.country;
+            document.getElementById('stamp-province').textContent = addressInfo.province;
+            document.getElementById('stamp-latlong').textContent = `Lat: ${currentCoords.latitude.toFixed(6)}, Long: ${currentCoords.longitude.toFixed(6)}`;
+            
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-GB');
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            document.getElementById('stamp-datetime').textContent = `${dateStr} ${timeStr}`;
+        }
+
+        // --- Camera Actions ---
+        function flipCamera() {
+            facingMode = facingMode === 'user' ? 'environment' : 'user';
+            initCamera();
+        }
+
+        function toggleFlash() {
+            const track = video.srcObject.getVideoTracks()[0];
+            const caps = track.getCapabilities();
+            if (caps.torch) {
+                const current = track.getSettings().torch;
+                track.applyConstraints({ advanced: [{ torch: !current }] });
             }
+        }
 
-            // Haptic feedback if available
-            if (window.navigator.vibrate) window.navigator.vibrate(50);
+        async function capture() {
+            // UI Flash effect
+            const flash = document.getElementById('shutter-flash');
+            flash.style.opacity = '1';
+            setTimeout(() => flash.style.opacity = '0', 150);
 
-            // Set canvas dimensions to match video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
             
-            // Draw video frame
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // 1. Draw Main Image
+            ctx.drawImage(video, 0, 0);
 
-            // Prepare Preview
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-            previewImg.src = dataUrl;
-            
-            // Update Stamp
-            document.getElementById('stamp-coords').textContent = `${currentCoords.latitude.toFixed(6)}, ${currentCoords.longitude.toFixed(6)}`;
-            document.getElementById('stamp-time').textContent = new Date().toLocaleString();
-            
-            // Show Preview UI
-            previewLayer.style.display = 'flex';
-        }
+            // 2. Draw Stamp Card (Composite)
+            const stampW = canvas.width * 0.45;
+            const stampH = canvas.height * 0.12;
+            const margin = 50;
+            const radius = 24;
 
-        function retake() {
-            previewLayer.style.display = 'none';
-            previewImg.src = '';
-        }
+            // Draw Card Background
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.beginPath();
+            ctx.roundRect(margin, canvas.height - stampH - margin - 150, stampW, stampH, radius);
+            ctx.fill();
 
-        function savePhoto() {
-            // Create a composite with the geo-stamp for the final download
-            const downloadCanvas = document.createElement('canvas');
-            downloadCanvas.width = canvas.width;
-            downloadCanvas.height = canvas.height;
-            const ctx = downloadCanvas.getContext('2d');
-            
-            // 1. Draw Photo
-            ctx.drawImage(canvas, 0, 0);
-            
-            // 2. Add Branding/Stamp on the image itself
-            const padding = 40;
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            const boxWidth = 600;
-            const boxHeight = 150;
-            ctx.fillRect(padding, downloadCanvas.height - boxHeight - padding, boxWidth, boxHeight);
-            
-            ctx.fillStyle = '#ee6912';
-            ctx.font = 'bold 36px sans-serif';
-            ctx.fillText('GEOSNAP VERIFIED', padding + 20, downloadCanvas.height - padding - 100);
-            
+            // Draw Map Image on Canvas
+            const mapImg = document.getElementById('stamp-map');
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(margin + 20, canvas.height - stampH - margin - 130, stampH - 40, stampH - 40, 10);
+            ctx.clip();
+            ctx.drawImage(mapImg, margin + 20, canvas.height - stampH - margin - 130, stampH - 40, stampH - 40);
+            ctx.restore();
+
+            // Draw Text
             ctx.fillStyle = 'white';
-            ctx.font = '30px monospace';
-            const locText = `LAT: ${currentCoords.latitude.toFixed(6)} | LNG: ${currentCoords.longitude.toFixed(6)}`;
-            ctx.fillText(locText, padding + 20, downloadCanvas.height - padding - 60);
-            ctx.font = '24px sans-serif';
-            ctx.fillText(new Date().toLocaleString(), padding + 20, downloadCanvas.height - padding - 25);
+            const textX = margin + stampH;
+            const baseLine = canvas.height - stampH - margin - 100;
+            
+            ctx.font = 'bold 36px sans-serif';
+            ctx.fillText(addressInfo.country, textX, baseLine);
+            
+            ctx.font = '30px sans-serif';
+            ctx.fillText(addressInfo.province, textX, baseLine + 40);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '22px monospace';
+            const latLong = `Lat: ${currentCoords.latitude.toFixed(6)}, Long: ${currentCoords.longitude.toFixed(6)}`;
+            ctx.fillText(latLong, textX, baseLine + 80);
+            ctx.fillText(document.getElementById('stamp-datetime').textContent, textX, baseLine + 110);
 
-            // 3. Trigger Download
+            // Update thumb and show preview
+            document.getElementById('recent-thumb').src = canvas.toDataURL();
+            document.getElementById('preview-layer').style.display = 'flex';
+        }
+
+        function closePreview() {
+            document.getElementById('preview-layer').style.display = 'none';
+        }
+
+        function saveFinal() {
             const link = document.createElement('a');
             link.download = `GeoSnap_${Date.now()}.jpg`;
-            link.href = downloadCanvas.toDataURL('image/jpeg', 0.95);
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
-
-            showModal('Saved!', 'Photo saved to your device with high-accuracy geo-tags embedded.', 'fa-circle-check');
-            retake();
+            closePreview();
         }
 
-        // Modal Utility
-        function showModal(title, text, icon = 'fa-circle-info') {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-text').textContent = text;
-            document.getElementById('modal-icon').className = `fa-solid ${icon} text-4xl brand-text mb-4`;
-            document.getElementById('msg-modal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('msg-modal').style.display = 'none';
-        }
-
-        // Lock screen orientation to portrait if possible
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('portrait').catch(() => {});
-        }
+        window.onload = () => {
+            initCamera();
+            startLocation();
+        };
     </script>
 </body>
 </html>
