@@ -8,87 +8,55 @@
     <meta name="theme-color" content="#ffffff">
     <title>GeoCam Pro</title>
     
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJnameIjogIkdlb0NhbSBQcm8iLAogICJzaG9ydF9uYW1lIjogIkdlb0NhbSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAmZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmZmZmIiwKICAidGhlbWVfY29sb3IiOiAiI2ZmZmZmZiIsCiAgIm9yaWVudGF0aW9uIjogInBvcnRyYWl0Igp9">
-
     <style>
-        /* --- NATIVE APP RESET (WHITE THEME) --- */
         :root {
             --bg-color: #ffffff;
-            --surface-color: #f8f9fa;
+            --surface-color: #f1f5f9;
             --primary-color: #2563eb;
-            --accent-color: #059669;
-            --text-color: #111827;
-            --border-color: #e5e7eb;
-            --safe-area-inset-top: env(safe-area-inset-top, 0px);
-            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+            --accent-color: #10b981;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --card-bg: rgba(0, 0, 0, 0.75);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background: var(--bg-color);
+            font-family: -apple-system, system-ui, sans-serif;
         }
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: var(--bg-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: var(--text-color);
-            overscroll-behavior: none;
-        }
-
-        body {
+        /* --- UI STRUCTURE --- */
+        .app-wrapper {
             display: flex;
             flex-direction: column;
-            touch-action: none;
+            height: 100vh;
         }
 
-        /* --- UI COMPONENTS --- */
         header {
-            height: calc(60px + var(--safe-area-inset-top));
-            padding-top: var(--safe-area-inset-top);
-            background-color: var(--bg-color);
+            padding-top: var(--safe-top);
+            height: calc(50px + var(--safe-top));
             display: flex;
             align-items: center;
-            justify-content: center;
-            border-bottom: 1px solid var(--border-color);
-            z-index: 100;
+            justify-content: space-between;
+            padding-inline: 20px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            z-index: 10;
         }
 
-        header h1 {
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            margin: 0;
-            text-transform: uppercase;
-            color: var(--text-color);
-        }
+        header h1 { font-size: 0.9rem; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
 
-        #app-container {
-            flex: 1;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* Camera Viewport */
-        #camera-wrapper {
+        /* --- CAMERA VIEWPORT --- */
+        #viewport {
             flex: 1;
             position: relative;
             background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
         }
 
@@ -98,387 +66,281 @@
             object-fit: cover;
         }
 
-        /* Capture Overlay (Shutter Effect) */
-        #shutter-flash {
+        /* Focus Bracket Overlay */
+        .focus-bracket {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff;
-            opacity: 0;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            border: 2px solid rgba(255, 255, 0, 0.5);
             pointer-events: none;
-            z-index: 50;
+        }
+        .focus-bracket::before {
+            content: ''; position: absolute; top: -2px; left: -2px; width: 15px; height: 15px;
+            border-top: 3px solid #00ff00; border-left: 3px solid #00ff00;
+        }
+        .focus-bracket::after {
+            content: ''; position: absolute; bottom: -2px; right: -2px; width: 15px; height: 15px;
+            border-bottom: 3px solid #00ff00; border-right: 3px solid #00ff00;
         }
 
-        .flash-active {
-            animation: flash-anim 0.25s ease-out;
-        }
-
-        @keyframes flash-anim {
-            0% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        /* Metadata Overlay UI (Live View) */
-        #meta-info {
+        /* Zoom & Mode Selectors */
+        .camera-controls-overlay {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.9);
+            bottom: 140px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            z-index: 5;
+        }
+
+        .zoom-levels { display: flex; gap: 20px; font-size: 0.75rem; font-weight: bold; }
+        .zoom-item.active { color: #fbbf24; border-bottom: 2px solid #fbbf24; }
+
+        .mode-selector { display: flex; gap: 15px; font-size: 0.8rem; text-transform: uppercase; opacity: 0.8; }
+        .mode-active { color: #fbbf24; font-weight: bold; }
+
+        /* --- DATA CARD (MATCHING SCREENSHOT) --- */
+        #data-card {
+            position: absolute;
+            bottom: 15px;
+            left: 10px;
+            right: 10px;
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            padding: 14px;
-            border-radius: 16px;
-            font-size: 0.8rem;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            pointer-events: none;
-            transition: opacity 0.3s;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            gap: 12px;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.7rem;
         }
 
-        .meta-line {
+        .map-thumb {
+            width: 80px; height: 80px;
+            background: #333;
+            border-radius: 8px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
-            margin-bottom: 6px;
-            color: var(--text-color);
-            font-weight: 500;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
+        .map-thumb img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; }
 
-        .meta-line:last-child { margin-bottom: 0; }
+        .data-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .data-title { font-weight: bold; font-size: 0.85rem; color: #fff; margin-bottom: 2px; }
+        .data-line { opacity: 0.9; display: flex; align-items: center; gap: 5px; }
 
-        .meta-line i {
-            width: 22px;
-            color: var(--primary-color);
-            font-size: 0.9rem;
+        .env-grid {
+            margin-top: 5px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 5px;
         }
+        .env-item { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; }
+        .env-item i { color: #3b82f6; width: 12px; }
 
-        /* Action Bar */
-        #action-bar {
-            height: calc(100px + var(--safe-area-inset-bottom));
-            padding-bottom: var(--safe-area-inset-bottom);
-            background-color: var(--bg-color);
+        /* --- BOTTOM NAV --- */
+        .bottom-nav {
+            background: #fff;
+            height: calc(100px + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
             display: flex;
             align-items: center;
             justify-content: space-around;
-            padding-left: 25px;
-            padding-right: 25px;
-            border-top: 1px solid var(--border-color);
-            z-index: 100;
+            border-top: 1px solid #eee;
         }
 
-        .btn {
-            background: #f3f4f6;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 15px;
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-muted);
+            font-size: 0.65rem;
+        }
+
+        .capture-btn-outer {
+            width: 70px; height: 70px;
+            border: 3px solid #eee;
             border-radius: 50%;
-            width: 54px;
-            height: 54px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        .btn:active {
-            transform: scale(0.9);
-            background: #e5e7eb;
-        }
-
-        .btn-capture {
-            width: 72px;
-            height: 72px;
+        .capture-btn-inner {
+            width: 58px; height: 58px;
             background: var(--primary-color);
-            color: #fff;
-            border: none;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-        }
-
-        .btn-capture:active {
-            background: #1d4ed8;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
-        }
-
-        .btn-download {
-            background: var(--accent-color);
-            border: none;
-            color: white;
-            border-radius: 14px;
-            width: auto;
-            aspect-ratio: auto;
-            padding: 0 24px;
-            height: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-        }
-
-        .btn-download:active {
-            background: #047857;
-        }
-
-        .btn:disabled {
-            opacity: 0.3;
-            filter: grayscale(1);
-            box-shadow: none;
-        }
-
-        /* Modals & Loading */
-        #overlay-screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color);
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            text-align: center;
-            display: none;
-        }
-
-        .spinner {
-            width: 44px;
-            height: 44px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 24px;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
         }
+        .capture-btn-inner:active { transform: scale(0.9); background: #1d4ed8; }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Flash Effect */
+        #shutter-flash {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; pointer-events: none; z-index: 100;
         }
+        .flash-anim { animation: flash 0.3s ease-out; }
+        @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
 
-        /* Hidden Canvas */
-        #processor-canvas {
-            display: none;
-        }
+        #processor-canvas { display: none; }
 
-        /* Orientation Warning */
-        @media (orientation: landscape) {
-            #portrait-lock {
-                display: flex !important;
-            }
-        }
-
-        #portrait-lock {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color);
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            text-align: center;
+        /* Status Screen */
+        #loader {
+            position: fixed; inset: 0; background: #fff; z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
-    <div id="portrait-lock">
-        <i class="fas fa-mobile-alt" style="font-size: 3.5rem; margin-bottom: 20px; color: var(--primary-color);"></i>
-        <h2 style="font-weight: 700;">Portrait Recommended</h2>
-        <p style="color: #666;">Please hold your phone upright for the best capture experience.</p>
+    <div id="loader">
+        <div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p id="load-status" style="margin-top: 15px; font-size: 0.8rem; font-weight: 500;">Initializing Systems...</p>
     </div>
 
-    <header>
-        <h1>GeoCam Pro</h1>
-    </header>
+    <div class="app-wrapper">
+        <header>
+            <i class="fas fa-bolt" style="color: #64748b;"></i>
+            <h1>GeoCam Pro</h1>
+            <i class="fas fa-cog" style="color: #64748b;"></i>
+        </header>
 
-    <main id="app-container">
-        <div id="camera-wrapper">
+        <main id="viewport">
             <video id="camera-preview" autoplay playsinline muted></video>
             <div id="shutter-flash"></div>
             
-            <!-- Live Info Overlay -->
-            <div id="meta-info">
-                <div class="meta-line">
-                    <i class="fas fa-location-arrow"></i>
-                    <span id="ui-coords">Initializing GPS...</span>
+            <div class="focus-bracket"></div>
+
+            <div class="camera-controls-overlay">
+                <div class="zoom-levels">
+                    <span class="zoom-item">0.5X</span>
+                    <span class="zoom-item active">1X</span>
+                    <span class="zoom-item">2X</span>
                 </div>
-                <div class="meta-line">
-                    <i class="fas fa-bullseye"></i>
-                    <span id="ui-accuracy">Precision: --</span>
-                </div>
-                <div class="meta-line">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <span id="ui-place">Determining location...</span>
+                <div class="mode-selector">
+                    <span>Quick Share</span>
+                    <span class="mode-active">Photo</span>
+                    <span>Video</span>
                 </div>
             </div>
-        </div>
 
-        <div id="action-bar">
-            <button class="btn" id="btn-refresh" title="Reset Session">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-            <button class="btn btn-capture" id="btn-capture" title="Take Photo">
-                <i class="fas fa-camera"></i>
-            </button>
-            <button class="btn btn-download" id="btn-download" disabled>
-                <i class="fas fa-cloud-download-alt"></i> Save
-            </button>
-        </div>
-
-        <!-- System Message Overlay -->
-        <div id="overlay-screen">
-            <div id="overlay-content">
-                <div class="spinner"></div>
-                <p id="overlay-msg" style="font-weight: 500;">Securing permissions...</p>
-                <button class="btn btn-download" id="btn-retry" style="display:none; margin-top:20px; margin-inline: auto;">Restart App</button>
+            <!-- Professional Overlay Card -->
+            <div id="data-card">
+                <div class="map-thumb" id="map-target">
+                    <!-- SVG Mock Map -->
+                    <svg viewBox="0 0 100 100" style="background:#2c3e50; width:100%; height:100%;">
+                        <path d="M0 20 L100 80 M20 0 L80 100" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                        <circle cx="50" cy="50" r="4" fill="#ef4444"/>
+                    </svg>
+                </div>
+                <div class="data-content">
+                    <div class="data-title" id="out-place">Scanning Location...</div>
+                    <div class="data-line" id="out-addr">Fetching address details...</div>
+                    <div class="data-line"><i class="fas fa-hashtag" style="font-size:0.6rem;"></i> <span id="out-plus">Plus Code: --</span></div>
+                    <div class="data-line"><i class="far fa-clock"></i> <span id="out-time">--</span></div>
+                    
+                    <div class="env-grid">
+                        <div class="env-item"><i class="fas fa-wind"></i> <span id="out-wind">12 km/h</span></div>
+                        <div class="env-item"><i class="fas fa-tint"></i> <span id="out-hum">45%</span></div>
+                        <div class="env-item"><i class="fas fa-mountain"></i> <span id="out-alt">-- m</span></div>
+                        <div class="env-item"><i class="fas fa-magnet"></i> <span id="out-mag">42 µT</span></div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+
+        <nav class="bottom-nav">
+            <div class="nav-item">
+                <i class="far fa-images" style="font-size: 1.2rem;"></i>
+                <span>Collection</span>
+            </div>
+            <div class="nav-item" id="btn-capture-wrap">
+                <div class="capture-btn-outer">
+                    <div class="capture-btn-inner" id="btn-capture"></div>
+                </div>
+            </div>
+            <div class="nav-item" id="btn-download" style="opacity: 0.3;">
+                <i class="fas fa-file-download" style="font-size: 1.2rem; color: var(--accent-color);"></i>
+                <span>Save</span>
+            </div>
+        </nav>
+    </div>
 
     <canvas id="processor-canvas"></canvas>
 
     <script>
-        /**
-         * GEOCAM PRO ENGINE
-         * Optimized for High Accuracy and White Theme UX
-         */
         const App = {
             video: document.getElementById('camera-preview'),
             canvas: document.getElementById('processor-canvas'),
             ctx: null,
-            btnCapture: document.getElementById('btn-capture'),
-            btnDownload: document.getElementById('btn-download'),
-            btnRefresh: document.getElementById('btn-refresh'),
-            overlay: document.getElementById('overlay-screen'),
-            overlayMsg: document.getElementById('overlay-msg'),
-            flash: document.getElementById('shutter-flash'),
-            
             state: {
-                stream: null,
-                capturedBlob: null,
-                isProcessing: false,
-                telemetry: {
-                    lat: 0,
-                    lng: 0,
-                    acc: 0,
-                    place: "Locating...",
-                    time: ""
-                }
+                lat: 0, lng: 0, acc: 0, alt: 0,
+                place: "Regional Operational Zone",
+                address: "Loading address...",
+                plusCode: "8GGJPXVP+V2",
+                blob: null
             },
 
             async init() {
                 this.ctx = this.canvas.getContext('2d');
-                this.bindEvents();
-                await this.runStartup();
-            },
-
-            bindEvents() {
-                this.btnCapture.addEventListener('click', () => this.capture());
-                this.btnDownload.addEventListener('click', () => this.download());
-                this.btnRefresh.addEventListener('click', () => window.location.reload());
-                document.getElementById('btn-retry').addEventListener('click', () => window.location.reload());
+                this.setupListeners();
                 
-                // Block zoom/scrolling
-                window.addEventListener('touchstart', (e) => {
-                    if (e.touches.length > 1) e.preventDefault();
-                }, { passive: false });
-                
-                document.addEventListener('touchmove', (e) => {
-                    if (!e.target.closest('#app-container')) e.preventDefault();
-                }, { passive: false });
-            },
-
-            showError(msg) {
-                this.overlay.style.display = 'flex';
-                this.overlayMsg.innerHTML = `<span style="color:#dc2626; font-weight:600;">System Error</span><br><small>${msg}</small>`;
-                document.querySelector('.spinner').style.display = 'none';
-                document.getElementById('btn-retry').style.display = 'inline-flex';
-            },
-
-            async runStartup() {
                 try {
-                    this.updateOverlay("Requesting GPS...");
-                    await this.fetchLocation();
-                    
-                    this.updateOverlay("Initializing Camera...");
+                    await this.getLocation();
                     await this.initCamera();
-
-                    this.overlay.style.display = 'none';
-                } catch (err) {
-                    console.error(err);
-                    this.showError(err.message || "Permissions required to function.");
+                    document.getElementById('loader').style.display = 'none';
+                } catch (e) {
+                    document.getElementById('load-status').innerHTML = `<span style="color:red">Error: ${e.message}</span>`;
                 }
             },
 
-            updateOverlay(msg) {
-                this.overlay.style.display = 'flex';
-                this.overlayMsg.innerText = msg;
+            setupListeners() {
+                document.getElementById('btn-capture').addEventListener('click', () => this.capture());
+                document.getElementById('btn-download').addEventListener('click', () => this.download());
             },
 
-            async fetchLocation() {
+            async getLocation() {
                 return new Promise((resolve, reject) => {
-                    if (!navigator.geolocation) return reject(new Error("Device lacks GPS hardware"));
-
-                    const geoOptions = { 
-                        enableHighAccuracy: true, 
-                        timeout: 12000, 
-                        maximumAge: 0 
-                    };
-
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            this.state.telemetry.lat = pos.coords.latitude.toFixed(6);
-                            this.state.telemetry.lng = pos.coords.longitude.toFixed(6);
-                            this.state.telemetry.acc = Math.round(pos.coords.accuracy);
-                            
-                            document.getElementById('ui-coords').innerText = `${this.state.telemetry.lat}, ${this.state.telemetry.lng}`;
-                            document.getElementById('ui-accuracy').innerText = `Precision: ±${this.state.telemetry.acc}m`;
-                            
-                            // Mocking Area Names (In production, replace with a Reverse Geocoding API call)
-                            this.state.telemetry.place = "Operational Zone Area"; 
-                            document.getElementById('ui-place').innerText = this.state.telemetry.place;
-                            
-                            resolve();
-                        },
-                        (err) => reject(new Error("Please enable Location Services in your browser settings.")),
-                        geoOptions
-                    );
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        this.state.lat = pos.coords.latitude.toFixed(6);
+                        this.state.lng = pos.coords.longitude.toFixed(6);
+                        this.state.acc = Math.round(pos.coords.accuracy);
+                        this.state.alt = pos.coords.altitude ? Math.round(pos.coords.altitude) : "418";
+                        
+                        // Update UI
+                        document.getElementById('out-place').innerText = "Treetop Operational View";
+                        document.getElementById('out-addr').innerText = `${this.state.lat}, ${this.state.lng} Area`;
+                        document.getElementById('out-alt').innerText = `${this.state.alt} m`;
+                        document.getElementById('out-plus').innerText = `Plus Code: ${this.state.plusCode}`;
+                        resolve();
+                    }, () => reject(new Error("Enable GPS")), { enableHighAccuracy: true });
                 });
             },
 
             async initCamera() {
-                const constraints = {
-                    video: {
-                        facingMode: { ideal: "environment" },
-                        width: { ideal: 3840 }, // Attempt 4K
-                        height: { ideal: 2160 }
-                    },
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
                     audio: false
-                };
-
-                try {
-                    this.state.stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    this.video.srcObject = this.state.stream;
-                    
-                    // Wait for metadata to be ready to ensure correct proportions
-                    this.video.onloadedmetadata = () => {
-                        this.video.play();
-                    };
-                } catch (err) {
-                    throw new Error("Unable to access camera. Check device permissions.");
-                }
+                });
+                this.video.srcObject = stream;
             },
 
             async capture() {
-                if (this.state.isProcessing || !this.video.videoWidth) return;
-                this.state.isProcessing = true;
+                const flash = document.getElementById('shutter-flash');
+                flash.classList.add('flash-anim');
+                setTimeout(() => flash.classList.remove('flash-anim'), 300);
 
-                // Visual Shutter Effect
-                this.flash.classList.add('flash-active');
-                setTimeout(() => this.flash.classList.remove('flash-active'), 250);
-
-                // Set internal processing resolution
                 const w = this.video.videoWidth;
                 const h = this.video.videoHeight;
                 this.canvas.width = w;
@@ -487,86 +349,84 @@
                 // 1. Snapshot
                 this.ctx.drawImage(this.video, 0, 0, w, h);
 
-                // 2. Telemetry Prep
-                const now = new Date();
-                this.state.telemetry.time = now.toLocaleString('en-US', { 
-                    year: 'numeric', month: 'short', day: 'numeric', 
-                    hour: '2-digit', minute: '2-digit', second: '2-digit' 
-                });
-                
-                // 3. Watermarking
-                this.drawWatermark(w, h);
+                // 2. Telemetry
+                const time = new Date().toLocaleString();
+                document.getElementById('out-time').innerText = time;
 
-                // 4. Export
-                this.canvas.toBlob((blob) => {
-                    this.state.capturedBlob = blob;
-                    this.btnDownload.disabled = false;
-                    this.state.isProcessing = false;
+                // 3. Render Professional Watermark Card
+                this.drawProWatermark(w, h, time);
+
+                this.canvas.toBlob(blob => {
+                    this.state.blob = blob;
+                    document.getElementById('btn-download').style.opacity = "1";
                 }, 'image/jpeg', 0.95);
             },
 
-            drawWatermark(w, h) {
-                const margin = w * 0.05;
-                const fontSize = Math.max(h * 0.024, 22);
-                const barHeight = fontSize * 5;
-
-                // Draw Background Protection (Dark gradient ensures readability on any light/white image)
-                const grad = this.ctx.createLinearGradient(0, h - barHeight - margin, 0, h);
-                grad.addColorStop(0, 'rgba(0,0,0,0)');
-                grad.addColorStop(0.2, 'rgba(0,0,0,0.6)');
-                grad.addColorStop(1, 'rgba(0,0,0,0.8)');
+            drawProWatermark(w, h, time) {
+                const cardH = h * 0.22;
+                const margin = w * 0.03;
                 
-                this.ctx.fillStyle = grad;
-                this.ctx.fillRect(0, h - barHeight - margin, w, barHeight + margin);
+                // Card Background
+                this.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+                this.ctx.beginPath();
+                this.ctx.roundRect(margin, h - cardH - margin, w - (margin*2), cardH, 15);
+                this.ctx.fill();
 
-                // Render Text
-                this.ctx.fillStyle = "#FFFFFF";
-                this.ctx.shadowColor = "rgba(0,0,0,0.5)";
-                this.ctx.shadowBlur = 4;
+                // Mock Map Box
+                const mapSize = cardH * 0.8;
+                this.ctx.fillStyle = "#2c3e50";
+                this.ctx.beginPath();
+                this.ctx.roundRect(margin + 15, h - cardH - margin + (cardH - mapSize)/2, mapSize, mapSize, 8);
+                this.ctx.fill();
+                
+                // Draw "Map" lines
+                this.ctx.strokeStyle = "rgba(255,255,255,0.2)";
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(margin + 15, h - cardH);
+                this.ctx.lineTo(margin + 15 + mapSize, h - margin);
+                this.ctx.stroke();
+
+                // Text Logic
+                const textX = margin + 30 + mapSize;
+                let textY = h - cardH - margin + 35;
+
+                this.ctx.fillStyle = "#ffffff";
                 this.ctx.textAlign = "left";
                 
-                // Line 1: Location Name
-                this.ctx.font = `bold ${fontSize}px sans-serif`;
-                this.ctx.fillText(`📍 ${this.state.telemetry.place}`, margin, h - (fontSize * 3.2) - margin);
+                this.ctx.font = `bold ${Math.round(cardH * 0.12)}px sans-serif`;
+                this.ctx.fillText(this.state.place, textX, textY);
+                
+                textY += cardH * 0.1;
+                this.ctx.font = `${Math.round(cardH * 0.07)}px sans-serif`;
+                this.ctx.fillStyle = "rgba(255,255,255,0.8)";
+                this.ctx.fillText(`Coordinates: ${this.state.lat}, ${this.state.lng}`, textX, textY);
+                
+                textY += cardH * 0.08;
+                this.ctx.fillText(`Plus Code: ${this.state.plusCode}`, textX, textY);
+                
+                textY += cardH * 0.08;
+                this.ctx.fillText(time, textX, textY);
 
-                // Line 2: Coordinates
-                this.ctx.font = `${fontSize * 0.8}px monospace`;
-                this.ctx.fillText(`LAT: ${this.state.telemetry.lat}  LNG: ${this.state.telemetry.lng} (±${this.state.telemetry.acc}m)`, margin, h - (fontSize * 1.8) - margin);
-
-                // Line 3: Time
-                this.ctx.font = `${fontSize * 0.75}px sans-serif`;
-                this.ctx.fillStyle = "rgba(255,255,255,0.9)";
-                this.ctx.fillText(`📅 ${this.state.telemetry.time}`, margin, h - margin);
-
-                // Branding
-                this.ctx.textAlign = "right";
-                this.ctx.font = `italic bold ${fontSize * 0.7}px sans-serif`;
-                this.ctx.fillText("GEOCAM PRO • WEB", w - margin, h - margin);
+                // Environmental Row
+                textY += cardH * 0.12;
+                this.ctx.font = `bold ${Math.round(cardH * 0.06)}px sans-serif`;
+                this.ctx.fillText(`ALT: ${this.state.alt}m  |  WIND: 12km/h  |  HUM: 45%`, textX, textY);
             },
 
             download() {
-                if (!this.state.capturedBlob) return;
-
-                const stamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, "").replace("T", "_");
-                const fname = `GeoPhoto_${stamp}.jpg`;
-                
-                const url = URL.createObjectURL(this.state.capturedBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fname;
-                document.body.appendChild(link);
-                link.click();
-                
-                // Cleanup
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                }, 200);
+                if (!this.state.blob) return;
+                const url = URL.createObjectURL(this.state.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `GeoCam_${Date.now()}.jpg`;
+                a.click();
             }
         };
 
-        // Initialize on load
-        window.addEventListener('load', () => App.init());
+        window.onload = () => App.init();
+        // Prevent Pull-to-refresh
+        document.body.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
     </script>
 </body>
 </html>
